@@ -3,6 +3,7 @@ local opt = vim.opt
 opt.clipboard = "unnamedplus"               -- allows neovim to access the system clipboard
 opt.completeopt = { "menuone", "noselect" } -- mostly just for cmp
 opt.fileencoding = "utf-8"                  -- the encoding written to a file
+opt.incsearch = true                        -- highlight matches as typing search phrase
 opt.hlsearch = true                         -- highlight all matches on previous search pattern
 opt.ignorecase = true                       -- ignore case in search patterns
 opt.mouse = "a"                             -- allow the mouse to be used in neovim
