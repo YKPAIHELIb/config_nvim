@@ -70,6 +70,13 @@ return packer.startup(function(use)
 
   use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate' })
 
+  use 'nvim-tree/nvim-web-devicons'
+  use {
+      'nvim-telescope/telescope.nvim', tag = '0.1.4',
+      -- or                            , branch = '0.1.x',
+      requires = { {'nvim-lua/plenary.nvim'} }
+  }
+
   -- Automatically set up your configuration after cloning packer.nvim
   -- Put this at the end after all plugins
   if PACKER_BOOTSTRAP then
