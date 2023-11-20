@@ -50,8 +50,8 @@ keymap("v", "<A-k>", ":m .-2<CR>==", opts)
 
 -- Visual Block --
 -- Move text up and down
-keymap("x", "J", ":move '>+1<CR>gv-gv", opts)
-keymap("x", "K", ":move '<-2<CR>gv-gv", opts)
+-- keymap("x", "J", ":move '>+1<CR>gv-gv", opts)
+-- keymap("x", "K", ":move '<-2<CR>gv-gv", opts)
 keymap("x", "<A-j>", ":move '>+1<CR>gv-gv", opts)
 keymap("x", "<A-k>", ":move '<-2<CR>gv-gv", opts)
 
@@ -63,7 +63,7 @@ keymap("t", "<C-k>", "<C-\\><C-N><C-w>k", term_opts)
 keymap("t", "<C-l>", "<C-\\><C-N><C-w>l", term_opts)
 
 -- Remove search highlight on Esc button
-keymap("t", "<Esc>", ":noh<CR><Esc>", opts)
+keymap("n", "<Esc>", ":noh<CR><Esc>", opts)
 
 -- Search and replace remaps
 keymap("n", "<leader>/", '"zyiw/<C-R>z<CR>', opts)
@@ -79,6 +79,8 @@ keymap("n", "N", "Nzz", opts)
 keymap("v", "p", '"_dP', opts)
 keymap("n", "x", '"_x', opts)
 keymap("n", "X", '"_X', opts)
+keymap("v", "x", '"_x', opts)
+keymap("v", "X", '"_X', opts)
 
 -- H/L is more natural than g_/$
 keymap("n", "H", '^', opts)
