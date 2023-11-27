@@ -66,10 +66,10 @@ keymap("t", "<C-l>", "<C-\\><C-N><C-w>l", term_opts)
 keymap("n", "<Esc>", ":noh<CR><Esc>", opts)
 
 -- Search and replace remaps
-keymap("n", "<leader>/", '"zyiw/<C-R>z<CR>', opts)
-keymap("v", "<leader>/", '"zy/<C-R>z<CR>', opts)
-keymap("n", "<leader>?", '"zyiw:%s/<C-R>z//gc<LEFT><LEFT><LEFT>', opts)
-keymap("v", "<leader>?", '"zy:%s/<C-R>z//gc<LEFT><LEFT><LEFT>', opts)
+keymap("n", "<leader>/", ':let @x=@"<CR>"zyiw:let @"=@x<CR>/<C-R>z<CR>', opts)
+keymap("v", "<leader>/", '<ESC>:let @x=@"<CR>gv"zy:let @"=@x<CR>/<C-R>z<CR>', opts)
+keymap("n", "<leader>?", ':let @x=@"<CR>"zyiw:let @"=@x<CR>:.,$s/<C-R>z//gc<LEFT><LEFT><LEFT>', opts)
+keymap("v", "<leader>?", '<ESC>:let @x=@"<CR>gv"zy:let @"=@x<CR>:.,$s/<C-R>z//gc<LEFT><LEFT><LEFT>', opts)
 
 -- Keep search results in the center of the screen
 keymap("n", "n", "nzz", opts)
