@@ -102,4 +102,5 @@ vim.keymap.set('n', '<leader>sg', builtin.git_files, {})
 vim.keymap.set('n', '<leader>sr', builtin.live_grep, {})
 vim.keymap.set('n', '<leader>sb', builtin.buffers, {})
 vim.keymap.set('n', '<leader>sh', builtin.help_tags, {})
+vim.keymap.set('n', '<leader>st', builtin.lsp_workspace_symbols, {})
 
