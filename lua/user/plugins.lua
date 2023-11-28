@@ -50,6 +50,13 @@ return packer.startup(function(use)
   use "lunarvim/darkplus.nvim"
 
   use {
+      'numToStr/Comment.nvim',
+      config = function()
+          require('Comment').setup()
+      end
+  }
+
+  use {
       'VonHeikemen/lsp-zero.nvim',
       branch = 'v3.x',
       requires = {

@@ -91,16 +91,15 @@ keymap("v", "L", '$', opts)
 -- Copy line without CR
 keymap("n", "Y", '^y$', opts)
 
-local cmp_status_ok, telescope = pcall(require, "user/telescope")
-if not cmp_status_ok then
+local telescope_status_ok, telescope_builtin = pcall(require, 'telescope.builtin')
+if not telescope_status_ok then
   return
 end
 
-local builtin = require('telescope.builtin')
-vim.keymap.set('n', '<leader>sf', builtin.find_files, {})
-vim.keymap.set('n', '<leader>sg', builtin.git_files, {})
-vim.keymap.set('n', '<leader>sr', builtin.live_grep, {})
-vim.keymap.set('n', '<leader>sb', builtin.buffers, {})
-vim.keymap.set('n', '<leader>sh', builtin.help_tags, {})
-vim.keymap.set('n', '<leader>st', builtin.lsp_workspace_symbols, {})
+vim.keymap.set('n', '<leader>sf', telescope_builtin.find_files, {})
+vim.keymap.set('n', '<leader>sg', telescope_builtin.git_files, {})
+vim.keymap.set('n', '<leader>sr', telescope_builtin.live_grep, {})
+vim.keymap.set('n', '<leader>sb', telescope_builtin.buffers, {})
+vim.keymap.set('n', '<leader>sh', telescope_builtin.help_tags, {})
+vim.keymap.set('n', '<leader>st', telescope_builtin.lsp_workspace_symbols, {})
 
