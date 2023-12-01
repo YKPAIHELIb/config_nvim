@@ -49,6 +49,8 @@ return packer.startup(function(use)
   use "folke/tokyonight.nvim"
   use "lunarvim/darkplus.nvim"
 
+  use 'RRethy/vim-illuminate'
+
   use {
       'numToStr/Comment.nvim',
       config = function()
