@@ -91,6 +91,9 @@ keymap("v", "L", '$', opts)
 -- Copy line without CR
 keymap("n", "Y", '^y$', opts)
 
+-- Ctrl+Backspace for delete word in insert mode
+keymap("i", "<M-BS>", '<C-w>', opts)
+
 local telescope_status_ok, telescope_builtin = pcall(require, 'telescope.builtin')
 if not telescope_status_ok then
   return
