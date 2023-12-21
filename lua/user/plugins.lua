@@ -96,7 +96,12 @@ return packer.startup(function(use)
   use 'simrat39/rust-tools.nvim'
   use 'mfussenegger/nvim-dap'
 
-  use "elihunter173/dirbuf.nvim"
+  use {
+      'echasnovski/mini.files',
+      config = function()
+          require("mini.files").setup()
+      end
+  }
 
   -- Automatically set up your configuration after cloning packer.nvim
   -- Put this at the end after all plugins
