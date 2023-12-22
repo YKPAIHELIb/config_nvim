@@ -96,6 +96,8 @@ return packer.startup(function(use)
   use 'simrat39/rust-tools.nvim'
   use 'mfussenegger/nvim-dap'
 
+  use "elihunter173/dirbuf.nvim"
+
   -- Automatically set up your configuration after cloning packer.nvim
   -- Put this at the end after all plugins
   if PACKER_BOOTSTRAP then
