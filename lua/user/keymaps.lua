@@ -77,7 +77,7 @@ keymap("n", "n", "nzz", opts)
 keymap("n", "N", "Nzz", opts)
 
 -- Paste/delete without yank
-keymap("v", "p", '"_dP', opts)
+keymap("v", "p", 'p:let @"=@0<CR>', opts)
 keymap("n", "x", '"_x', opts)
 keymap("n", "X", '"_X', opts)
 keymap("v", "x", '"_x', opts)
