@@ -33,3 +33,11 @@ require'nvim-treesitter.configs'.setup {
     additional_vim_regex_highlighting = false,
   },
 }
+
+-- Autocommand to detect Jenkinsfile and set the filetype to groovy
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = "Jenkinsfile",
+  callback = function()
+    vim.bo.filetype = "groovy"
+  end
+})
