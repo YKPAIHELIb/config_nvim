@@ -19,24 +19,19 @@ lsp_zero.on_attach(function(client, bufnr)
   lsp_zero.default_keymaps({buffer = bufnr})
 end)
 
-require('mason').setup({})
-require('mason-lspconfig').setup({
-  ensure_installed = {
-      "lua_ls"
-  },
-  handlers = {
-    lsp_zero.default_setup,
-  },
-})
-
 require('lspconfig').lua_ls.setup {
-    settings = {
-        Lua = {
-            diagnostics = {
-                -- Get the language server to recognize the `vim` global
-                globals = {'vim'},
-            },
-        }
+  on_attach = lsp_zero.on_attach,
+  capabilities = lsp_zero.get_capabilities(),
+  settings = {
+    Lua = {
+      diagnostics = {
+        globals = {'vim'},
+      },
     }
+  }
 }
 
+require('lspconfig').rust_analyzer.setup({
+  on_attach = lsp_zero.on_attach,
+  capabilities = lsp_zero.get_capabilities(),
+})
