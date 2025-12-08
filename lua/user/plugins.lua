@@ -36,6 +36,9 @@ packer.init {
       return require("packer.util").float { border = "rounded" }
     end,
   },
+
+  snapshot_path = vim.fn.stdpath("config") .. "/snapshots",
+  snapshot = "snapshot.json",
 }
 
 -- Install your plugins here
