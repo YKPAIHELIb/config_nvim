@@ -29,10 +29,10 @@ opt.signcolumn = "yes"                      -- always show the sign column, othe
 opt.wrap = false                            -- display lines as one long line
 opt.scrolloff = 5                           -- is one of my fav
 opt.sidescrolloff = 8
+vim.opt.winborder = "rounded"
 
 vim.cmd "set whichwrap+=<,>,[,],h,l"
 
 if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
     vim.o.shell = 'powershell'
 end
-
