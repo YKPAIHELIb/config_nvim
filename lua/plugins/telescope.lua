@@ -10,7 +10,18 @@ return {
     { "<leader>sh", function() require("telescope.builtin").help_tags() end, desc = "Help Tags" },
   },
   config = function()
-    require("telescope").setup()
+    require("telescope").setup({
+      defaults = {
+        -- "ascending" puts the prompt on top and results below in normal order.
+        -- Also avoids an upstream bug in pickers.lua:1466 where the "descending"
+        -- code path tries to set the cursor past the end of the results buffer
+        -- during rapid filtering (causes "Invalid cursor line: out of range").
+        sorting_strategy = "ascending",
+        layout_config = {
+          prompt_position = "top",
+        },
+      },
+    })
 
     -- <leader>st / <leader>sm work only with LSP; attached lazily on LspAttach
     vim.api.nvim_create_autocmd("LspAttach", {
