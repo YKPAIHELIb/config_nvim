@@ -16,7 +16,7 @@ opt.splitright = true                       -- force all vertical splits to go t
 opt.swapfile = false                        -- creates a swapfile
 opt.termguicolors = true                    -- set term gui colors (most terminals support this)
 opt.timeoutlen = 1000                       -- time to wait for a mapped sequence to complete (in milliseconds)
-opt.undofile = false                         -- enable persistent undo
+opt.undofile = false                        -- enable persistent undo
 opt.updatetime = 300                        -- faster completion (4000ms default)
 opt.expandtab = true                        -- convert tabs to spaces
 opt.shiftwidth = 4                          -- the number of spaces inserted for each indentation
@@ -29,10 +29,10 @@ opt.signcolumn = "yes"                      -- always show the sign column, othe
 opt.wrap = false                            -- display lines as one long line
 opt.scrolloff = 5                           -- is one of my fav
 opt.sidescrolloff = 8
+opt.winborder = "rounded"                   -- rounded borders on floating windows (nvim 0.11+)
 
 vim.cmd "set whichwrap+=<,>,[,],h,l"
 
 if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
     vim.o.shell = 'powershell'
 end
-

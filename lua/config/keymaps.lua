@@ -25,9 +25,6 @@ keymap("n", "<C-j>", "<C-w>j", opts)
 keymap("n", "<C-k>", "<C-w>k", opts)
 keymap("n", "<C-l>", "<C-w>l", opts)
 
-keymap("n", "<leader>e", "<cmd>lua MiniFiles.open()<CR>", opts)
-keymap("n", "<leader>E", "<cmd>lua MiniFiles.open(vim.api.nvim_buf_get_name(0))<CR>", opts)
-
 -- Resize with arrows
 keymap("n", "<C-Up>", ":resize +2<CR>", opts)
 keymap("n", "<C-Down>", ":resize -2<CR>", opts)
@@ -44,8 +41,10 @@ keymap("v", "<", "<gv", opts)
 keymap("v", ">", ">gv", opts)
 
 -- Move text up and down
--- keymap("n", "<A-j>", ":m .+1<CR>==", opts)
--- keymap("n", "<A-k>", ":m .-2<CR>==", opts)
+keymap("n", "<A-j>", ":m .+1<CR>==", opts)
+keymap("n", "<A-k>", ":m .-2<CR>==", opts)
+keymap("i", "<A-j>", "<Esc>:m .+1<CR>==gi", opts)
+keymap("i", "<A-k>", "<Esc>:m .-2<CR>==gi", opts)
 keymap("v", "<A-j>", ":m .+1<CR>==", opts)
 keymap("v", "<A-k>", ":m .-2<CR>==", opts)
 
@@ -82,12 +81,13 @@ keymap("n", "x", '"_x', opts)
 keymap("n", "X", '"_X', opts)
 keymap("v", "x", '"_x', opts)
 keymap("v", "X", '"_X', opts)
+keymap("n", "S", '"_S', opts) -- delete line + start inserting without yank
 
 -- H/L is more natural than g_/$
 keymap("n", "H", '^', opts)
 keymap("v", "H", '^', opts)
-keymap("n", "L", '$', opts)
-keymap("v", "L", '$', opts)
+keymap("n", "L", 'g_', opts) -- last non-blank char, not the literal EOL
+keymap("v", "L", 'g_', opts)
 
 -- Copy line without CR
 keymap("n", "Y", '^y$', opts)
@@ -95,15 +95,13 @@ keymap("n", "Y", '^y$', opts)
 -- Ctrl+Backspace for delete word in insert mode
 keymap("i", "<M-BS>", '<C-w>', opts)
 
-local telescope_status_ok, telescope_builtin = pcall(require, 'telescope.builtin')
-if not telescope_status_ok then
-  return
-end
+-- <C-q> as an alias for visual-block (muscle memory from vsvim setup)
+keymap("n", "<C-q>", "<C-v>", opts)
 
-vim.keymap.set('n', '<leader>sf', telescope_builtin.find_files, {})
-vim.keymap.set('n', '<leader>sg', telescope_builtin.git_files, {})
-vim.keymap.set('n', '<leader>sr', telescope_builtin.live_grep, {})
-vim.keymap.set('n', '<leader>sb', telescope_builtin.buffers, {})
-vim.keymap.set('n', '<leader>sh', telescope_builtin.help_tags, {})
-vim.keymap.set('n', '<leader>st', telescope_builtin.lsp_workspace_symbols, {})
+-- Duplicate line / selection (`:t.` copies to right after current line)
+keymap("n", "<Leader>y", ":t.<CR>", opts)
+keymap("v", "<Leader>y", ":t.<CR>", opts)
 
+-- Delete trailing whitespace
+keymap("n", "<Leader>dw", [[:%s/\s\+$//<CR>:nohl<CR>]], opts)
+keymap("v", "<Leader>dw", [[:s/\s\+$//<CR>:nohl<CR>]], opts)
