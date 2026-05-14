@@ -1,48 +1,26 @@
 return {
-  "VonHeikemen/lsp-zero.nvim",
-  branch = "v3.x",
+  "neovim/nvim-lspconfig",
+  event = { "BufReadPre", "BufNewFile" },
   dependencies = {
-    "neovim/nvim-lspconfig",
+    "hrsh7th/cmp-nvim-lsp",
   },
   config = function()
-    local lsp_zero = require("lsp-zero")
+    -- give every server cmp-nvim-lsp's capabilities so completion lights up
+    local capabilities = require("cmp_nvim_lsp").default_capabilities()
+    vim.lsp.config("*", { capabilities = capabilities })
 
-    lsp_zero.preset("recommended")
-
-    vim.api.nvim_create_autocmd("LspAttach", {
-      callback = function(args)
-        local bufnr = args.buf
-        local opts = { buffer = bufnr, remap = false }
-
-        vim.keymap.set("n", "<leader>i", vim.lsp.buf.hover, opts)
-        vim.keymap.set("n", "<leader>r", vim.lsp.buf.rename, opts)
-        vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
-        vim.keymap.set("n", "<A-CR>", vim.lsp.buf.code_action, opts)
-
-        lsp_zero.default_keymaps({ buffer = bufnr })
-
-        if vim.lsp.get_client_by_id(args.data.client_id):supports_method("textDocument/inlayHint") then
-            vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
-        end
-      end,
-    })
-
-    local capabilities = lsp_zero.get_capabilities()
-
+    -- per-server overrides
     vim.lsp.config("lua_ls", {
-      capabilities = capabilities,
       settings = {
         Lua = {
-          diagnostics = {
-            globals = { "vim" },
-          },
+          runtime = { version = "LuaJIT" },
+          diagnostics = { globals = { "vim" } },
+          workspace = { checkThirdParty = false },
         },
       },
     })
-    vim.lsp.enable("lua_ls")
 
     vim.lsp.config("rust_analyzer", {
-      capabilities = capabilities,
       settings = {
         ["rust-analyzer"] = {
           cargo = {
@@ -51,9 +29,7 @@ return {
           },
           checkOnSave = true,
           check = { command = "clippy" },
-          procMacro = {
-            enable = true,
-          },
+          procMacro = { enable = true },
           inlayHints = {
             enable = true,
             bindingModeHints = { enable = true },
@@ -70,13 +46,38 @@ return {
             },
           },
           hover = {
-            actions = {
-              enable = true,
-            },
+            actions = { enable = true },
           },
         },
       },
     })
+
+    vim.lsp.enable("lua_ls")
     vim.lsp.enable("rust_analyzer")
+
+    -- keymaps on attach
+    vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(args)
+        local opts = { buffer = args.buf, silent = true }
+        vim.keymap.set("n", "<leader>i", vim.lsp.buf.hover, opts)
+        vim.keymap.set("n", "<leader>r", vim.lsp.buf.rename, opts)
+        vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+        vim.keymap.set("n", "<A-CR>", vim.lsp.buf.code_action, opts)
+        -- vim.keymap.set("n", "gl", vim.diagnostic.open_float, opts) -- conflicts with illuminate next-reference (gl); rethink later
+
+        -- LSP navigation
+        vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+        vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+        vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+        vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+        vim.keymap.set("n", "gs", vim.lsp.buf.signature_help, opts)
+
+        -- auto-enable inlay hints when the server provides them (heavily used by rust-analyzer)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client.server_capabilities.inlayHintProvider then
+          vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
+        end
+      end,
+    })
   end,
 }

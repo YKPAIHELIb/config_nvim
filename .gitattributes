@@ -1,0 +1,3 @@
+# mason.nvim doesn't work on Android termux (no LSP binaries available there).
+# On future master->termux merges, keep termux's version (which is "absent").
+lua/plugins/mason.lua merge=ours

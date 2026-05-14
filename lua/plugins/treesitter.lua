@@ -1,6 +1,7 @@
 return {
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main", -- the rewrite; `master` is the legacy line, kept only for Nvim 0.11 compat
     build = ":TSUpdate",
     event = { "BufReadPost", "BufNewFile" },
 
@@ -9,7 +10,6 @@ return {
 
       -- auto_install works only for parsers with pre-generated C sources.
       -- Some languages require the tree-sitter CLI (Node.js) to generate parsers.
-      -- Without it, auto-install may fail or be noisy for those filetypes.
       auto_install = true,
 
       highlight = {
@@ -19,5 +19,5 @@ return {
         end,
       },
     },
-  }
+  },
 }

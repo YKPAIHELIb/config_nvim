@@ -5,11 +5,10 @@ return {
     "hrsh7th/cmp-buffer",
     "hrsh7th/cmp-path",
     "hrsh7th/cmp-cmdline",
-    "hrsh7th/cmp-nvim-lua",
     "hrsh7th/cmp-nvim-lsp",
 
     -- snippets
-    "L3MON4D3/LuaSnip",
+    { "L3MON4D3/LuaSnip", version = "v2.*" },
     "saadparwaiz1/cmp_luasnip",
     "rafamadriz/friendly-snippets",
   },
@@ -24,36 +23,41 @@ return {
       return col == 0 or vim.fn.getline("."):sub(col, col):match("%s")
     end
 
-    --   פּ ﯟ   some other good icons
+    --   פּ ﯟ   some other good icons
     local kind_icons = {
       Text = "󰊄",
       Method = "m",
       Function = "󰊕",
-      Constructor = "",
-      Field = "",
+      Constructor = "",
+      Field = "",
       Variable = "󰫧",
-      Class = "",
-      Interface = "",
-      Module = "",
-      Property = "",
-      Unit = "",
-      Value = "",
-      Enum = "",
+      Class = "",
+      Interface = "",
+      Module = "",
+      Property = "",
+      Unit = "",
+      Value = "",
+      Enum = "",
       Keyword = "󰌆",
-      Snippet = "",
-      Color = "",
-      File = "",
-      Reference = "",
-      Folder = "",
-      EnumMember = "",
-      Constant = "",
-      Struct = "",
-      Event = "",
-      Operator = "",
+      Snippet = "",
+      Color = "",
+      File = "",
+      Reference = "",
+      Folder = "",
+      EnumMember = "",
+      Constant = "",
+      Struct = "",
+      Event = "",
+      Operator = "",
       TypeParameter = "󰉺",
     }
 
     cmp.setup({
+      completion = {
+        completeopt = "menu,menuone,noinsert", -- highlight first item, but don't auto-insert until confirmed
+      },
+      preselect = cmp.PreselectMode.Item, -- honor server-side preselect hints too
+
       snippet = {
         expand = function(args)
           luasnip.lsp_expand(args.body)
@@ -63,6 +67,15 @@ return {
       mapping = {
         ["<C-j>"] = cmp.mapping.select_next_item(),
         ["<C-k>"] = cmp.mapping.select_prev_item(),
+
+        -- Arrow keys navigate completions only when the menu is open;
+        -- otherwise they fall through to normal line motion.
+        ["<Down>"] = cmp.mapping(function(fallback)
+          if cmp.visible() then cmp.select_next_item() else fallback() end
+        end, { "i" }),
+        ["<Up>"] = cmp.mapping(function(fallback)
+          if cmp.visible() then cmp.select_prev_item() else fallback() end
+        end, { "i" }),
         ["<C-b>"] = cmp.mapping.scroll_docs(-1),
         ["<C-f>"] = cmp.mapping.scroll_docs(1),
         ["<C-Space>"] = cmp.mapping.complete(),
@@ -100,18 +113,18 @@ return {
           item.kind = kind_icons[item.kind] or item.kind
           item.menu = ({
             nvim_lsp = "[LSP]",
+            lazydev = "[NvimAPI]",
             buffer = "[Buffer]",
             path = "[Path]",
             luasnip = "[Snippet]",
-            nvim_lua = "[Lua]",
           })[entry.source.name]
           return item
         end,
       },
 
       sources = {
+        { name = "lazydev", group_index = 0 }, -- prioritized for Neovim Lua API completions
         { name = "nvim_lsp" },
-        { name = "nvim_lua" },
         { name = "luasnip" },
         { name = "buffer" },
         { name = "path" },
@@ -122,7 +135,7 @@ return {
       },
 
       experimental = {
-        ghost_text = false,
+        ghost_text = true,
       },
     })
 
