@@ -58,6 +58,12 @@ return {
         vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
         vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
         vim.keymap.set("n", "gs", vim.lsp.buf.signature_help, opts)
+
+        -- auto-enable inlay hints when the server provides them
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client.server_capabilities.inlayHintProvider then
+          vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
+        end
       end,
     })
   end,
