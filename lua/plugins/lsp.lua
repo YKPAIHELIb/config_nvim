@@ -22,6 +22,26 @@ return {
 
     vim.lsp.enable("lua_ls")
 
+    -- :LspEnable <server>  — start a server on demand (for languages not in the auto-enable list).
+    -- Tab-completes against every server nvim-lspconfig knows about.
+    vim.api.nvim_create_user_command("LspEnable", function(args)
+      vim.lsp.enable(args.args)
+      vim.notify("LSP enabled: " .. args.args, vim.log.levels.INFO)
+    end, {
+      nargs = 1,
+      desc = "Enable an LSP server for this session",
+      complete = function(arg)
+        local seen = {}
+        for _, f in ipairs(vim.api.nvim_get_runtime_file("lsp/*.lua", true)) do
+          local name = vim.fn.fnamemodify(f, ":t:r")
+          if name:find(arg, 1, true) then
+            seen[name] = true
+          end
+        end
+        return vim.tbl_keys(seen)
+      end,
+    })
+
     -- keymaps on attach
     vim.api.nvim_create_autocmd("LspAttach", {
       callback = function(args)
