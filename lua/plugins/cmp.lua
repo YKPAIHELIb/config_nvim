@@ -1,6 +1,6 @@
 return {
   "hrsh7th/nvim-cmp",
-  event = "InsertEnter",
+  event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
     "hrsh7th/cmp-buffer",
     "hrsh7th/cmp-path",
@@ -82,24 +82,23 @@ return {
         ["<C-e>"] = cmp.mapping.abort(),
         ["<CR>"] = cmp.mapping.confirm({ select = true }),
 
+        -- Tab confirms (same as Enter). Cycling is done with arrows or <C-j>/<C-k>.
+        -- Outside an open menu, Tab still drives snippet expand/jump.
         ["<Tab>"] = cmp.mapping(function(fallback)
           if cmp.visible() then
-            cmp.select_next_item()
+            cmp.confirm({ select = true })
           elseif luasnip.expandable() then
             luasnip.expand()
           elseif luasnip.expand_or_jumpable() then
             luasnip.expand_or_jump()
-          elseif check_backspace() then
-            fallback()
           else
             fallback()
           end
         end, { "i", "s" }),
 
+        -- S-Tab no longer cycles cmp; it only jumps backward through snippet placeholders.
         ["<S-Tab>"] = cmp.mapping(function(fallback)
-          if cmp.visible() then
-            cmp.select_prev_item()
-          elseif luasnip.jumpable(-1) then
+          if luasnip.jumpable(-1) then
             luasnip.jump(-1)
           else
             fallback()
@@ -139,21 +138,48 @@ return {
       },
     })
 
-    -- `/` search
-    cmp.setup.cmdline("/", {
-      mapping = cmp.mapping.preset.cmdline(),
-      sources = {
-        { name = "buffer" },
-      },
+    -- Cmdline behavior:
+    --   - First item is visually preselected.
+    --   - <Tab> confirms the (pre)selection. <CR> always executes literally —
+    --     so `:w<CR>`, `:q<CR>` etc. work without a second keypress.
+    --   - Arrow keys and <C-j>/<C-k> cycle through items. <S-Tab> is inert.
+    local cmdline_mapping = cmp.mapping.preset.cmdline({
+      ["<Tab>"] = cmp.mapping(function(fallback)
+        if cmp.visible() then
+          cmp.confirm({ select = true })
+        else
+          fallback()
+        end
+      end, { "c" }),
+      ["<CR>"] = cmp.mapping(function(fallback) fallback() end, { "c" }),
+      ["<Down>"] = cmp.mapping(function(fallback)
+        if cmp.visible() then cmp.select_next_item() else fallback() end
+      end, { "c" }),
+      ["<Up>"] = cmp.mapping(function(fallback)
+        if cmp.visible() then cmp.select_prev_item() else fallback() end
+      end, { "c" }),
+      ["<C-j>"] = cmp.mapping(function(fallback)
+        if cmp.visible() then cmp.select_next_item() else fallback() end
+      end, { "c" }),
+      ["<C-k>"] = cmp.mapping(function(fallback)
+        if cmp.visible() then cmp.select_prev_item() else fallback() end
+      end, { "c" }),
     })
 
+    local cmdline_completion_opts = {
+      preselect = cmp.PreselectMode.Item,
+      completion = { completeopt = "menu,menuone,noinsert" },
+      mapping = cmdline_mapping,
+    }
+
+    -- `/` search
+    cmp.setup.cmdline("/", vim.tbl_extend("force", cmdline_completion_opts, {
+      sources = { { name = "buffer" } },
+    }))
+
     -- `:` command line
-    cmp.setup.cmdline(":", {
-      mapping = cmp.mapping.preset.cmdline(),
-      sources = {
-        { name = "path" },
-        { name = "cmdline" },
-      },
-    })
+    cmp.setup.cmdline(":", vim.tbl_extend("force", cmdline_completion_opts, {
+      sources = { { name = "path" }, { name = "cmdline" } },
+    }))
   end,
 }

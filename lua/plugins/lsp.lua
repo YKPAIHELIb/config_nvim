@@ -55,6 +55,26 @@ return {
     vim.lsp.enable("lua_ls")
     vim.lsp.enable("rust_analyzer")
 
+    -- :LspEnable <server>  — start a server on demand (for languages not in the auto-enable list).
+    -- Tab-completes against every server nvim-lspconfig knows about.
+    vim.api.nvim_create_user_command("LspEnable", function(args)
+      vim.lsp.enable(args.args)
+      vim.notify("LSP enabled: " .. args.args, vim.log.levels.INFO)
+    end, {
+      nargs = 1,
+      desc = "Enable an LSP server for this session",
+      complete = function(arg)
+        local seen = {}
+        for _, f in ipairs(vim.api.nvim_get_runtime_file("lsp/*.lua", true)) do
+          local name = vim.fn.fnamemodify(f, ":t:r")
+          if name:find(arg, 1, true) then
+            seen[name] = true
+          end
+        end
+        return vim.tbl_keys(seen)
+      end,
+    })
+
     -- keymaps on attach
     vim.api.nvim_create_autocmd("LspAttach", {
       callback = function(args)
@@ -63,7 +83,7 @@ return {
         vim.keymap.set("n", "<leader>r", vim.lsp.buf.rename, opts)
         vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
         vim.keymap.set("n", "<A-CR>", vim.lsp.buf.code_action, opts)
-        -- vim.keymap.set("n", "gl", vim.diagnostic.open_float, opts) -- conflicts with illuminate next-reference (gl); rethink later
+        vim.keymap.set("n", "<leader>l", vim.diagnostic.open_float, opts) -- was gl; moved off g* because illuminate uses gl for next reference
 
         -- LSP navigation
         vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
@@ -72,7 +92,7 @@ return {
         vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
         vim.keymap.set("n", "gs", vim.lsp.buf.signature_help, opts)
 
-        -- auto-enable inlay hints when the server provides them (heavily used by rust-analyzer)
+        -- auto-enable inlay hints when the server provides them
         local client = vim.lsp.get_client_by_id(args.data.client_id)
         if client and client.server_capabilities.inlayHintProvider then
           vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
