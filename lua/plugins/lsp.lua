@@ -50,7 +50,7 @@ return {
         vim.keymap.set("n", "<leader>r", vim.lsp.buf.rename, opts)
         vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
         vim.keymap.set("n", "<A-CR>", vim.lsp.buf.code_action, opts)
-        -- vim.keymap.set("n", "gl", vim.diagnostic.open_float, opts) -- conflicts with illuminate next-reference (gl); rethink later
+        vim.keymap.set("n", "<leader>l", vim.diagnostic.open_float, opts) -- was gl; moved off g* because illuminate uses gl for next reference
 
         -- LSP navigation
         vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
