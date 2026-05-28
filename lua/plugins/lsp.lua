@@ -20,7 +20,40 @@ return {
       },
     })
 
+    vim.lsp.config("rust_analyzer", {
+      settings = {
+        ["rust-analyzer"] = {
+          cargo = {
+            allFeatures = true,
+            loadOutDirsFromCheck = true,
+          },
+          checkOnSave = true,
+          check = { command = "clippy" },
+          procMacro = { enable = true },
+          inlayHints = {
+            enable = true,
+            bindingModeHints = { enable = true },
+            chainingHints = { enable = true },
+            closingBraceHints = { enable = true, minLines = 25 },
+            closureReturnTypeHints = { enable = "with_block" },
+            lifetimeElisionHints = { enable = "skip_trivial" },
+            parameterHints = { enable = true },
+            reborrowHints = { enable = "mutable" },
+            typeHints = {
+              enable = true,
+              hideClosureInitialization = false,
+              hideNamedConstructor = false,
+            },
+          },
+          hover = {
+            actions = { enable = true },
+          },
+        },
+      },
+    })
+
     vim.lsp.enable("lua_ls")
+    vim.lsp.enable("rust_analyzer")
 
     -- :LspEnable <server>  — start a server on demand (for languages not in the auto-enable list).
     -- Tab-completes against every server nvim-lspconfig knows about.

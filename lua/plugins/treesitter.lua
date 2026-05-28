@@ -6,7 +6,7 @@ return {
     event = { "BufReadPost", "BufNewFile" },
 
     opts = {
-      ensure_installed = { "c_sharp", "lua", "vim", "vimdoc", "query" },
+      ensure_installed = { "c_sharp", "lua", "rust", "vim", "vimdoc", "query" },
 
       -- auto_install works only for parsers with pre-generated C sources.
       -- Some languages require the tree-sitter CLI (Node.js) to generate parsers.
