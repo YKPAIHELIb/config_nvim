@@ -138,6 +138,16 @@ return {
       },
     })
 
+    -- Arrows in cmdline should recall history without popping cmp. Suppressing via
+    -- cmp's `enabled` callback races with cmp's CmdlineChanged handler. Instead we
+    -- temporarily add CmdlineChanged to `eventignore` so vim doesn't fire the autocmd
+    -- at all during the recall, then schedule its removal for the next event-loop tick.
+    local function recall_without_cmp(fallback)
+      vim.opt.eventignore:append("CmdlineChanged")
+      fallback()
+      vim.schedule(function() vim.opt.eventignore:remove("CmdlineChanged") end)
+    end
+
     -- Cmdline behavior:
     --   - First item is visually preselected.
     --   - <Tab> confirms the (pre)selection. <CR> always executes literally —
@@ -152,11 +162,13 @@ return {
         end
       end, { "c" }),
       ["<CR>"] = cmp.mapping(function(fallback) fallback() end, { "c" }),
+      -- Arrows: navigate the cmp menu when it's visible, otherwise recall history
+      -- without triggering cmp's auto-show on the recall's text change.
       ["<Down>"] = cmp.mapping(function(fallback)
-        if cmp.visible() then cmp.select_next_item() else fallback() end
+        if cmp.visible() then cmp.select_next_item() else recall_without_cmp(fallback) end
       end, { "c" }),
       ["<Up>"] = cmp.mapping(function(fallback)
-        if cmp.visible() then cmp.select_prev_item() else fallback() end
+        if cmp.visible() then cmp.select_prev_item() else recall_without_cmp(fallback) end
       end, { "c" }),
       ["<C-j>"] = cmp.mapping(function(fallback)
         if cmp.visible() then cmp.select_next_item() else fallback() end
