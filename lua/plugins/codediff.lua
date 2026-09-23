@@ -29,6 +29,12 @@ return {
           layout = "side-by-side",
           ignore_trim_whitespace = ignore_ws,
         },
+        explorer = {
+          view_mode = "tree",
+        },
+        history = {
+          view_mode = "tree",
+        },
       })
     end
     apply()
