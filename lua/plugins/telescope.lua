@@ -20,6 +20,10 @@ return {
         layout_config = {
           prompt_position = "top",
         },
+        -- Used by every file-opening action (<CR>, <C-t>, <C-v>, <C-x>).
+        get_selection_window = function()
+          return require("config.tabs").target_win(vim.api.nvim_get_current_win())
+        end,
       },
     })
 

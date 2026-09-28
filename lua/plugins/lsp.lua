@@ -75,6 +75,26 @@ return {
       end,
     })
 
+    -- Wraps a location request so that from a tool tab (see config.tabs)
+    -- results in the current file stay in place while results in other files
+    -- open in the editing tab. Elsewhere the stock behaviour runs untouched.
+    local function routed(request, always_list)
+      return function()
+        local tabs = require("config.tabs")
+        local win = vim.api.nvim_get_current_win()
+        if not tabs.is_redirected(win) then return request() end
+        request({ on_list = tabs.location_handler(win, always_list) })
+      end
+    end
+
+    local nav = {
+      { { "gd", "<C-]>" }, vim.lsp.buf.definition },
+      { { "gD" }, vim.lsp.buf.declaration },
+      { { "gi", "gri" }, vim.lsp.buf.implementation },
+      { { "grt" }, vim.lsp.buf.type_definition },
+      { { "gr", "grr" }, function(opts) vim.lsp.buf.references(nil, opts) end, true },
+    }
+
     -- keymaps on attach
     vim.api.nvim_create_autocmd("LspAttach", {
       callback = function(args)
@@ -86,10 +106,11 @@ return {
         vim.keymap.set("n", "<leader>l", vim.diagnostic.open_float, opts) -- was gl; moved off g* because illuminate uses gl for next reference
 
         -- LSP navigation
-        vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-        vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-        vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
-        vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+        for _, entry in ipairs(nav) do
+          for _, lhs in ipairs(entry[1]) do
+            vim.keymap.set("n", lhs, routed(entry[2], entry[3]), opts)
+          end
+        end
         vim.keymap.set("n", "gs", vim.lsp.buf.signature_help, opts)
 
         -- auto-enable inlay hints when the server provides them
