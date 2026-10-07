@@ -1,7 +1,8 @@
 -- Routing of "open a file" actions away from tool tabs.
 --
--- A tool tab holds a codediff session or has no regular file window at all
--- (terminal, help, quickfix, ...). Files opened from a tool tab, or from a
+-- A tool tab holds a codediff session, is flagged with `vim.t.tool_tab`
+-- (e.g. a blame tab), or has no regular file window at all (terminal, help,
+-- quickfix, ...). Files opened from a tool tab, or from a
 -- non-file window such as a terminal split, land in a file window of the
 -- current or most recently visited editing tab.
 local M = {}
@@ -20,14 +21,16 @@ local function is_file_win(win)
     and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == ""
 end
 
--- Checked via package.loaded so a lookup never triggers lazy-loading codediff.
-local function is_codediff_tab(tab)
+-- codediff is checked via package.loaded so a lookup never triggers
+-- lazy-loading it.
+local function is_tool_tab(tab)
+  if vim.t[tab].tool_tab then return true end
   local lifecycle = package.loaded["codediff.ui.lifecycle"]
   return lifecycle ~= nil and lifecycle.get_session(tab) ~= nil
 end
 
 local function file_win_of(tab)
-  if is_codediff_tab(tab) then return nil end
+  if is_tool_tab(tab) then return nil end
   local cur = vim.api.nvim_tabpage_get_win(tab)
   if is_file_win(cur) then return cur end
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
@@ -39,7 +42,7 @@ end
 -- exists.
 local function find_target(win)
   local tab = vim.api.nvim_win_get_tabpage(win)
-  if is_file_win(win) and not is_codediff_tab(tab) then return win end
+  if is_file_win(win) and not is_tool_tab(tab) then return win end
 
   local best = file_win_of(tab)
   if best then return best end
