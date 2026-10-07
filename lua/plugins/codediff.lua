@@ -160,12 +160,90 @@ return {
       { "c", "Commits diff: marked vs cursor (visual: first vs last)" },
     }
 
+    -- Per history panel: the `m` row and the two rows of the last compare.
+    local panels = setmetatable({}, { __mode = "k" })
+    local paint_ns = vim.api.nvim_create_namespace("codediff-history-compare")
+
+    -- A file row hidden under a collapsed commit is shown on its commit row.
+    local function line_of(history, entry)
+      local node = history.tree:get_node(entry.id)
+      if node and node._line then return node._line end
+      local commit = history.tree:get_node("commit:" .. entry.hash)
+      return commit and commit._line
+    end
+
+    local function paint(history)
+      local state, buf = panels[history], history.bufnr
+      if not state or not vim.api.nvim_buf_is_valid(buf) then return end
+      vim.api.nvim_buf_clear_namespace(buf, paint_ns, 0, -1)
+      local function put(entry, opts)
+        local line = entry and line_of(history, entry)
+        if line then
+          vim.api.nvim_buf_set_extmark(buf, paint_ns, line - 1, 0, vim.tbl_extend("force", { priority = 10000 }, opts))
+        end
+      end
+      local old_label, new_label = "◀ old ", "▶ new "
+      put(state.old, {
+        virt_text = { { old_label, "CodeDiffCharDelete" } },
+        virt_text_pos = "inline",
+        line_hl_group = "CodeDiffLineDelete",
+      })
+      put(state.new, {
+        virt_text = { { new_label, "CodeDiffCharInsert" } },
+        virt_text_pos = "inline",
+        line_hl_group = "CodeDiffLineInsert",
+      })
+
+      -- codediff pads its selected row with spaces to the window width, so
+      -- end-of-line text would land off-screen; the marker is placed at a
+      -- window column right after the row's real text instead.
+      local mark_line = state.mark and line_of(history, state.mark)
+      if mark_line then
+        local label = " ● marked"
+        local text = vim.api.nvim_buf_get_lines(buf, mark_line - 1, mark_line, false)[1] or ""
+        local col = vim.fn.strdisplaywidth((text:gsub("%s+$", "")))
+        if state.old and line_of(history, state.old) == mark_line then
+          col = col + vim.fn.strdisplaywidth(old_label)
+        elseif state.new and line_of(history, state.new) == mark_line then
+          col = col + vim.fn.strdisplaywidth(new_label)
+        end
+        local win = history.winid
+        if win and vim.api.nvim_win_is_valid(win) then
+          local info = vim.fn.getwininfo(win)[1]
+          col = math.min(col, info.width - info.textoff - vim.fn.strdisplaywidth(label))
+        end
+        put(state.mark, { virt_text = { { label, "WarningMsg" } }, virt_text_win_col = math.max(col, 0) })
+      end
+    end
+
+    -- The tree rewrites every line (dropping foreign extmarks) on each
+    -- render, so painting follows every render. Selecting a row with <CR>
+    -- shows codediff's own single-commit diff, which ends the compare.
+    local function ensure_hooks(history)
+      if panels[history] then return end
+      panels[history] = {}
+      local tree = history.tree
+      local render = tree.render
+      tree.render = function(self, ...)
+        render(self, ...)
+        paint(history)
+      end
+      local on_file_select = history.on_file_select
+      history.on_file_select = function(...)
+        panels[history].old, panels[history].new = nil, nil
+        return on_file_select(...)
+      end
+    end
+
     local function history_panel()
       local lifecycle = require("codediff.ui.lifecycle")
       local tab = vim.api.nvim_get_current_tabpage()
       local session = lifecycle.get_session(tab)
       if not session or session.mode ~= "history" then return nil end
-      return lifecycle.get_explorer(tab), tab
+      local history = lifecycle.get_explorer(tab)
+      if not history then return nil end
+      ensure_hooks(history)
+      return history, tab
     end
 
     -- Commit and file path of a history row. The path is nil for a commit
@@ -175,10 +253,10 @@ return {
       local data = node and node.data
       if not data then return nil end
       if data.type == "file" then
-        return { hash = data.commit_hash, path = data.path }
+        return { id = node:get_id(), hash = data.commit_hash, path = data.path }
       elseif data.type == "commit" then
         local path = history.is_single_file_mode and (data.file_path or history.opts.file_path) or nil
-        return { hash = data.hash, path = path }
+        return { id = node:get_id(), hash = data.hash, path = path }
       end
     end
 
@@ -205,6 +283,11 @@ return {
         vim.notify("codediff: no file on these rows; pick file rows or use c", vim.log.levels.WARN)
         return
       end
+
+      local state = panels[history]
+      state.old, state.new, state.mark = old, new, nil
+      paint(history)
+
       if whole then
         -- :CodeDiff run from a codediff tab closes that tab, so it is issued
         -- from a scratch tab that is dropped once the new diff tab opens.
@@ -245,15 +328,15 @@ return {
           vim.notify("codediff: not a commit or file row", vim.log.levels.WARN)
           return
         end
-        vim.b[buf].codediff_compare_mark = entry
-        vim.notify("codediff: marked " .. entry.hash:sub(1, 8))
+        panels[history].mark = entry
+        paint(history)
       end
 
       local function compare_with_mark(whole)
         return function()
           local history, tab = history_panel()
           if not history then return end
-          local marked = vim.b[buf].codediff_compare_mark
+          local marked = panels[history].mark
           if not marked then
             vim.notify("codediff: mark a row with m first", vim.log.levels.WARN)
             return
@@ -281,6 +364,23 @@ return {
       map("x", "d", compare_selection(false), compare_keys[2][2])
       map("n", "c", compare_with_mark(true), compare_keys[3][2])
       map("x", "c", compare_selection(true), compare_keys[3][2])
+    end
+
+    -- codediff puts its tab-wide keys on the history panel too, re-applying
+    -- them on every diff update. Its do/dp there make `d` wait for a second
+    -- key, and they have nothing to act on in the panel.
+    local lifecycle = require("codediff.ui.lifecycle")
+    local set_tab_keymap = lifecycle.set_tab_keymap
+    lifecycle.set_tab_keymap = function(tabpage, mode, lhs, ...)
+      local ok = set_tab_keymap(tabpage, mode, lhs, ...)
+      local view_keys = require("codediff.config").options.keymaps.view
+      local session = lifecycle.get_session(tabpage)
+      if mode == "n" and (lhs == view_keys.diff_get or lhs == view_keys.diff_put)
+        and session and session.mode == "history"
+        and session.explorer and vim.api.nvim_buf_is_valid(session.explorer.bufnr) then
+        pcall(vim.keymap.del, "n", lhs, { buffer = session.explorer.bufnr })
+      end
+      return ok
     end
 
     vim.api.nvim_create_autocmd("FileType", {
