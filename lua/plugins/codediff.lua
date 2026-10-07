@@ -4,6 +4,13 @@
 return {
   "esmuellert/codediff.nvim",
   cmd = { "CodeDiff", "CodeDiffScratch", "CodeDiffToggleWS" },
+  -- An explicit HEAD range lifts the default 100-commit limit, so the whole
+  -- history is listed. In visual mode only commits touching the selected
+  -- lines are listed.
+  keys = {
+    { "<leader>wh", "<cmd>CodeDiff history HEAD %<cr>", desc = "File history" },
+    { "<leader>wh", ":CodeDiff history HEAD<cr>", mode = "x", desc = "Line-range history" },
+  },
   config = function()
     -- VSCode Dark+-ish diff colors. Defined as dedicated groups so they don't
     -- bleed into nvim's general DiffAdd/DiffDelete (used by :diffthis, gitsigns, etc.).
@@ -140,5 +147,190 @@ return {
         bind_wheel(args.buf)
       end,
     })
+
+    -- Compare any two commits from the history panel. `m` marks a row; `d`
+    -- diffs the file between the marked row and the row under the cursor in
+    -- this tab, `c` opens the whole-commit comparison in a new tab. In visual
+    -- mode both compare the first and last selected rows. The older commit
+    -- goes on the left. Built on codediff internals (history panel object,
+    -- its tree and view.update), which have no public API.
+    local compare_keys = {
+      { "m", "Mark commit/file for compare" },
+      { "d", "File diff: marked vs cursor (visual: first vs last)" },
+      { "c", "Commits diff: marked vs cursor (visual: first vs last)" },
+    }
+
+    local function history_panel()
+      local lifecycle = require("codediff.ui.lifecycle")
+      local tab = vim.api.nvim_get_current_tabpage()
+      local session = lifecycle.get_session(tab)
+      if not session or session.mode ~= "history" then return nil end
+      return lifecycle.get_explorer(tab), tab
+    end
+
+    -- Commit and file path of a history row. The path is nil for a commit
+    -- row of a whole-repository history.
+    local function row_entry(history, line)
+      local node = history.tree:get_node(line)
+      local data = node and node.data
+      if not data then return nil end
+      if data.type == "file" then
+        return { hash = data.commit_hash, path = data.path }
+      elseif data.type == "commit" then
+        local path = history.is_single_file_mode and (data.file_path or history.opts.file_path) or nil
+        return { hash = data.hash, path = path }
+      end
+    end
+
+    local function is_ancestor(git_root, a, b)
+      local res = vim.system({ "git", "merge-base", "--is-ancestor", a, b }, { cwd = git_root }):wait()
+      return res.code == 0
+    end
+
+    -- `whole` compares the full commits; otherwise only the file of the rows.
+    local function compare(history, tab, a, b, whole)
+      if not a or not b then
+        vim.notify("codediff: pick commit or file rows", vim.log.levels.WARN)
+        return
+      end
+      if a.hash == b.hash then
+        vim.notify("codediff: both rows are the same commit", vim.log.levels.WARN)
+        return
+      end
+      local old, new = a, b
+      if is_ancestor(history.git_root, b.hash, a.hash) then old, new = b, a end
+
+      local path_old, path_new = old.path or new.path, new.path or old.path
+      if not whole and not path_old then
+        vim.notify("codediff: no file on these rows; pick file rows or use c", vim.log.levels.WARN)
+        return
+      end
+      if whole then
+        -- :CodeDiff run from a codediff tab closes that tab, so it is issued
+        -- from a scratch tab that is dropped once the new diff tab opens.
+        vim.cmd("tabnew")
+        local scratch = vim.api.nvim_get_current_tabpage()
+        vim.api.nvim_create_autocmd("User", {
+          pattern = "CodeDiffOpen",
+          once = true,
+          callback = function()
+            vim.schedule(function()
+              if vim.api.nvim_tabpage_is_valid(scratch) then
+                pcall(vim.cmd, vim.api.nvim_tabpage_get_number(scratch) .. "tabclose")
+              end
+            end)
+          end,
+        })
+        vim.cmd(("CodeDiff %s %s"):format(old.hash, new.hash))
+        return
+      end
+
+      require("codediff.ui.view").update(tab, {
+        mode = "history",
+        git_root = history.git_root,
+        original_path = path_old,
+        modified_path = path_new,
+        original_revision = old.hash,
+        modified_revision = new.hash,
+        line_range = history.opts.line_range,
+      }, require("codediff.config").options.diff.jump_to_first_change)
+    end
+
+    local function bind_compare(buf)
+      local function mark()
+        local history = history_panel()
+        if not history then return end
+        local entry = row_entry(history, vim.fn.line("."))
+        if not entry then
+          vim.notify("codediff: not a commit or file row", vim.log.levels.WARN)
+          return
+        end
+        vim.b[buf].codediff_compare_mark = entry
+        vim.notify("codediff: marked " .. entry.hash:sub(1, 8))
+      end
+
+      local function compare_with_mark(whole)
+        return function()
+          local history, tab = history_panel()
+          if not history then return end
+          local marked = vim.b[buf].codediff_compare_mark
+          if not marked then
+            vim.notify("codediff: mark a row with m first", vim.log.levels.WARN)
+            return
+          end
+          compare(history, tab, marked, row_entry(history, vim.fn.line(".")), whole)
+        end
+      end
+
+      local function compare_selection(whole)
+        return function()
+          local first, last = vim.fn.line("v"), vim.fn.line(".")
+          vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "nx", false)
+          local history, tab = history_panel()
+          if not history then return end
+          compare(history, tab, row_entry(history, first), row_entry(history, last), whole)
+        end
+      end
+
+      local opts = { buffer = buf, nowait = true, silent = true }
+      local function map(mode, lhs, fn, desc)
+        vim.keymap.set(mode, lhs, fn, vim.tbl_extend("force", opts, { desc = desc }))
+      end
+      map("n", "m", mark, compare_keys[1][2])
+      map("n", "d", compare_with_mark(false), compare_keys[2][2])
+      map("x", "d", compare_selection(false), compare_keys[2][2])
+      map("n", "c", compare_with_mark(true), compare_keys[3][2])
+      map("x", "c", compare_selection(true), compare_keys[3][2])
+    end
+
+    vim.api.nvim_create_autocmd("FileType", {
+      group = vim.api.nvim_create_augroup("CodeDiffHistoryCompare", { clear = true }),
+      pattern = "codediff-history",
+      callback = function(args) bind_compare(args.buf) end,
+    })
+
+    -- g? help: codediff builds its sections from a fixed list, so the
+    -- compare keys are appended to the open help window afterwards.
+    local help = require("codediff.ui.keymap_help")
+    local toggle_help = help.toggle
+    help.toggle = function(tabpage)
+      toggle_help(tabpage)
+      local session = require("codediff.ui.lifecycle").get_session(tabpage)
+      local win = session and session._help_win
+      if not session or session.mode ~= "history" or not win or not vim.api.nvim_win_is_valid(win) then return end
+
+      local hbuf = vim.api.nvim_win_get_buf(win)
+      local width = vim.api.nvim_win_get_width(win)
+      local title = "COMPARE"
+      local lines = { "", string.rep(" ", math.floor((width - #title) / 2)) .. title }
+      for _, k in ipairs(compare_keys) do
+        lines[#lines + 1] = ("%14s → %s"):format(k[1], k[2])
+      end
+      local start = vim.api.nvim_buf_line_count(hbuf)
+      vim.bo[hbuf].modifiable = true
+      vim.api.nvim_buf_set_lines(hbuf, -1, -1, false, lines)
+      vim.bo[hbuf].modifiable = false
+
+      local ns = vim.api.nvim_create_namespace("codediff-help")
+      local function hl(row, from, to, group)
+        vim.api.nvim_buf_set_extmark(hbuf, ns, row, from, { end_col = to, hl_group = group })
+      end
+      hl(start + 1, 0, #lines[2], "CodeDiffHelpSection")
+      for i = 3, #lines do
+        hl(start + i - 1, 0, 14, "CodeDiffHelpKey")
+        hl(start + i - 1, 14, #lines[i], "CodeDiffHelpDesc")
+      end
+
+      local max = width
+      for _, l in ipairs(lines) do max = math.max(max, vim.fn.strdisplaywidth(l) + 3) end
+      local height = vim.api.nvim_buf_line_count(hbuf)
+      vim.api.nvim_win_set_config(win, {
+        relative = "editor",
+        row = math.floor((vim.o.lines - height) / 2),
+        col = math.floor((vim.o.columns - max) / 2),
+        width = max,
+        height = height,
+      })
+    end
   end,
 }
