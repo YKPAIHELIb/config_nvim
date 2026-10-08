@@ -153,7 +153,7 @@ local function compare(history, tab, a, b, whole)
   paint(history)
 
   if whole then
-    require("ext.codediff.new_tab")(("CodeDiff %s %s"):format(old.hash, new.hash))
+    vim.cmd(("CodeDiff %s %s"):format(old.hash, new.hash))
     return
   end
 

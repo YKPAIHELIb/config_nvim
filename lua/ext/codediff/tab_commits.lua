@@ -16,7 +16,6 @@
 local M = {}
 
 local git_float = require("config.git_float")
-local new_tab = require("ext.codediff.new_tab")
 
 local function git(root, args)
   local res = vim.system(vim.list_extend({ "git" }, args), { cwd = root, text = true }):wait()
@@ -148,7 +147,7 @@ function M.log()
     local hash = hash_here()
     if not hash then return end
     pcall(vim.api.nvim_win_close, win, true)
-    new_tab(("CodeDiff %s^ %s"):format(hash, hash))
+    vim.cmd(("CodeDiff %s^ %s"):format(hash, hash))
   end, "CodeDiff for this commit")
 end
 
@@ -161,7 +160,7 @@ function M.history()
     vim.notify("codediff: no commits in " .. range_label(p), vim.log.levels.INFO)
     return
   end
-  new_tab("CodeDiff history " .. range)
+  vim.cmd("CodeDiff history " .. range)
 end
 
 return M
