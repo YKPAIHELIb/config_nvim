@@ -44,6 +44,24 @@ return {
     { "<leader>sr", picker("live_grep"), mode = nx, desc = "Live Grep" },
     { "<leader>sb", picker("buffers", function() return { sorter = path_sorter({}) } end), mode = nx, desc = "Buffers" },
     { "<leader>sh", picker("help_tags"), mode = nx, desc = "Help Tags" },
+    { "<leader>sk", picker("keymaps"), mode = nx, desc = "Keymaps" },
+    -- The stock commands picker matches the command name only; matching the
+    -- description too finds commands by what they do.
+    {
+      "<leader>sc",
+      picker("commands", function()
+        local by_name = require("telescope.make_entry").gen_from_commands({})
+        return {
+          entry_maker = function(cmd)
+            local entry = by_name(cmd)
+            entry.ordinal = cmd.name .. " " .. (cmd.definition or "")
+            return entry
+          end,
+        }
+      end),
+      mode = nx,
+      desc = "Commands",
+    },
   },
   config = function()
     require("telescope").setup({

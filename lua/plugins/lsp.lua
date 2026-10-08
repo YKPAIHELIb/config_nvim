@@ -88,30 +88,37 @@ return {
     end
 
     local nav = {
-      { { "gd", "<C-]>" }, vim.lsp.buf.definition },
-      { { "gD" }, vim.lsp.buf.declaration },
-      { { "gi", "gri" }, vim.lsp.buf.implementation },
-      { { "grt" }, vim.lsp.buf.type_definition },
-      { { "gr", "grr" }, function(opts) vim.lsp.buf.references(nil, opts) end, true },
+      { keys = { "gd", "<C-]>" }, request = vim.lsp.buf.definition, desc = "Go to definition" },
+      { keys = { "gD" }, request = vim.lsp.buf.declaration, desc = "Go to declaration" },
+      { keys = { "gi", "gri" }, request = vim.lsp.buf.implementation, desc = "Go to implementation" },
+      { keys = { "grt" }, request = vim.lsp.buf.type_definition, desc = "Go to type definition" },
+      {
+        keys = { "gr", "grr" },
+        request = function(opts) vim.lsp.buf.references(nil, opts) end,
+        always_list = true,
+        desc = "List references",
+      },
     }
 
     -- keymaps on attach
     vim.api.nvim_create_autocmd("LspAttach", {
       callback = function(args)
-        local opts = { buffer = args.buf, silent = true }
-        vim.keymap.set("n", "<leader>i", vim.lsp.buf.hover, opts)
-        vim.keymap.set("n", "<leader>r", vim.lsp.buf.rename, opts)
-        vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
-        vim.keymap.set("n", "<A-CR>", vim.lsp.buf.code_action, opts)
-        vim.keymap.set("n", "<leader>l", vim.diagnostic.open_float, opts) -- was gl; moved off g* because illuminate uses gl for next reference
+        local function map(lhs, rhs, desc)
+          vim.keymap.set("n", lhs, rhs, { buffer = args.buf, silent = true, desc = desc })
+        end
+        map("<leader>i", vim.lsp.buf.hover, "Hover info")
+        map("<leader>r", vim.lsp.buf.rename, "Rename symbol")
+        map("<leader>f", vim.lsp.buf.format, "Format buffer")
+        map("<A-CR>", vim.lsp.buf.code_action, "Code action")
+        map("<leader>l", vim.diagnostic.open_float, "Line diagnostics") -- was gl; moved off g* because illuminate uses gl for next reference
 
         -- LSP navigation
         for _, entry in ipairs(nav) do
-          for _, lhs in ipairs(entry[1]) do
-            vim.keymap.set("n", lhs, routed(entry[2], entry[3]), opts)
+          for _, lhs in ipairs(entry.keys) do
+            map(lhs, routed(entry.request, entry.always_list), entry.desc)
           end
         end
-        vim.keymap.set("n", "gs", vim.lsp.buf.signature_help, opts)
+        map("gs", vim.lsp.buf.signature_help, "Signature help")
 
         -- auto-enable inlay hints when the server provides them
         local client = vim.lsp.get_client_by_id(args.data.client_id)

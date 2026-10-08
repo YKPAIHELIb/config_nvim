@@ -5,6 +5,10 @@ local term_opts = { silent = true }
 -- Shorten function name
 local keymap = vim.api.nvim_set_keymap
 
+local function described(desc)
+  return vim.tbl_extend("force", opts, { desc = desc })
+end
+
 --Remap space as leader key
 keymap("", "<Space>", "<Nop>", opts)
 vim.g.mapleader = " "
@@ -66,10 +70,10 @@ keymap("t", "<C-l>", "<C-\\><C-N><C-w>l", term_opts)
 keymap("n", "<Esc>", ":noh<CR><Esc>", opts)
 
 -- Search and replace remaps
-keymap("n", "<leader>/", ':let @x=@"<CR>"zyiw:let @"=@x<CR>/<C-R>z<CR>', opts)
-keymap("v", "<leader>/", '<ESC>:let @x=@"<CR>gv"zy:let @"=@x<CR>/<C-R>z<CR>', opts)
-keymap("n", "<leader>?", ':let @x=@"<CR>"zyiw:let @"=@x<CR>:.,$s/<C-R>z//gc<LEFT><LEFT><LEFT>', opts)
-keymap("v", "<leader>?", '<ESC>:let @x=@"<CR>gv"zy:let @"=@x<CR>:.,$s/<C-R>z//gc<LEFT><LEFT><LEFT>', opts)
+keymap("n", "<leader>/", ':let @x=@"<CR>"zyiw:let @"=@x<CR>/<C-R>z<CR>', described("Search word in buffer"))
+keymap("v", "<leader>/", '<ESC>:let @x=@"<CR>gv"zy:let @"=@x<CR>/<C-R>z<CR>', described("Search selection in buffer"))
+keymap("n", "<leader>?", ':let @x=@"<CR>"zyiw:let @"=@x<CR>:.,$s/<C-R>z//gc<LEFT><LEFT><LEFT>', described("Replace word from here down"))
+keymap("v", "<leader>?", '<ESC>:let @x=@"<CR>gv"zy:let @"=@x<CR>:.,$s/<C-R>z//gc<LEFT><LEFT><LEFT>', described("Replace selection from here down"))
 
 -- Keep search results in the center of the screen
 keymap("n", "n", "nzz", opts)
@@ -99,9 +103,9 @@ keymap("i", "<M-BS>", '<C-w>', opts)
 keymap("n", "<C-q>", "<C-v>", opts)
 
 -- Duplicate line / selection (`:t.` copies to right after current line)
-keymap("n", "<Leader>y", ":t.<CR>", opts)
-keymap("v", "<Leader>y", ":t.<CR>", opts)
+keymap("n", "<Leader>y", ":t.<CR>", described("Duplicate line"))
+keymap("v", "<Leader>y", ":t.<CR>", described("Duplicate selection"))
 
 -- Delete trailing whitespace
-keymap("n", "<Leader>dw", [[:%s/\s\+$//<CR>:nohl<CR>]], opts)
-keymap("v", "<Leader>dw", [[:s/\s\+$//<CR>:nohl<CR>]], opts)
+keymap("n", "<Leader>dw", [[:%s/\s\+$//<CR>:nohl<CR>]], described("Delete trailing whitespace"))
+keymap("v", "<Leader>dw", [[:s/\s\+$//<CR>:nohl<CR>]], described("Delete trailing whitespace"))
