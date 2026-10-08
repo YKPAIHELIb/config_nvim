@@ -34,14 +34,37 @@ end
 
 local nx = { "n", "x" }
 
+-- ripgrep skips hidden (dot) paths and gitignored paths by default. These
+-- include hidden paths but never descend into .git itself; `everything`
+-- also includes gitignored paths.
+local function rg_flags(everything)
+  local flags = { "--hidden", "--glob", "!**/.git/*" }
+  if everything then flags[#flags + 1] = "--no-ignore" end
+  return flags
+end
+
+local function files_opts(everything)
+  return function()
+    return { find_command = vim.list_extend({ "rg", "--files", "--color", "never" }, rg_flags(everything)) }
+  end
+end
+
+local function grep_opts(everything)
+  return function()
+    return { additional_args = rg_flags(everything) }
+  end
+end
+
 return {
   "nvim-telescope/telescope.nvim",
   dependencies = { "nvim-lua/plenary.nvim" },
   cmd = "Telescope",
   keys = {
-    { "<leader>sf", picker("find_files"), mode = nx, desc = "Find Files" },
+    { "<leader>sf", picker("find_files", files_opts(false)), mode = nx, desc = "Find Files" },
+    { "<leader>sF", picker("find_files", files_opts(true)), mode = nx, desc = "Find Files (incl. ignored)" },
     { "<leader>sg", picker("git_files"), mode = nx, desc = "Git Files" },
-    { "<leader>sr", picker("live_grep"), mode = nx, desc = "Live Grep" },
+    { "<leader>sr", picker("live_grep", grep_opts(false)), mode = nx, desc = "Live Grep" },
+    { "<leader>sR", picker("live_grep", grep_opts(true)), mode = nx, desc = "Live Grep (incl. ignored)" },
     { "<leader>sb", picker("buffers", function() return { sorter = path_sorter({}) } end), mode = nx, desc = "Buffers" },
     { "<leader>sh", picker("help_tags"), mode = nx, desc = "Help Tags" },
     { "<leader>sk", picker("keymaps"), mode = nx, desc = "Keymaps" },
