@@ -153,22 +153,7 @@ local function compare(history, tab, a, b, whole)
   paint(history)
 
   if whole then
-    -- :CodeDiff run from a codediff tab closes that tab, so it is issued
-    -- from a scratch tab that is dropped once the new diff tab opens.
-    vim.cmd("tabnew")
-    local scratch = vim.api.nvim_get_current_tabpage()
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "CodeDiffOpen",
-      once = true,
-      callback = function()
-        vim.schedule(function()
-          if vim.api.nvim_tabpage_is_valid(scratch) then
-            pcall(vim.cmd, vim.api.nvim_tabpage_get_number(scratch) .. "tabclose")
-          end
-        end)
-      end,
-    })
-    vim.cmd(("CodeDiff %s %s"):format(old.hash, new.hash))
+    require("ext.codediff.new_tab")(("CodeDiff %s %s"):format(old.hash, new.hash))
     return
   end
 

@@ -10,6 +10,10 @@ return {
   keys = {
     { "<leader>wh", "<cmd>CodeDiff history HEAD %<cr>", desc = "File history" },
     { "<leader>wh", ":CodeDiff history HEAD<cr>", mode = "x", desc = "Line-range history" },
+    -- What the current codediff tab compares, see lua/ext/codediff/tab_commits.lua.
+    { "<leader>wi", function() require("ext.codediff.tab_commits").info() end, desc = "Diff tab: right commit details" },
+    { "<leader>wl", function() require("ext.codediff.tab_commits").log() end, desc = "Diff tab: log left..right" },
+    { "<leader>wL", function() require("ext.codediff.tab_commits").history() end, desc = "Diff tab: history left..right" },
   },
   config = function()
     -- VSCode Dark+-ish diff colors. Defined as dedicated groups so they don't

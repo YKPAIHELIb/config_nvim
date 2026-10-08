@@ -7,37 +7,7 @@
 -- Built-in "tab"/"split"/"vsplit"/"current" all rearrange windows; "vsplit"
 -- additionally triggers a BufHidden race in blame.nvim's stack view.
 local function show_commit_floating(commit_hash, _row, file_path)
-  local dir = vim.fn.fnamemodify(file_path, ":h")
-  local output = vim.fn.systemlist({ "git", "-C", dir, "show", commit_hash })
-  if vim.v.shell_error ~= 0 then
-    vim.notify("git show failed: " .. table.concat(output, "\n"), vim.log.levels.ERROR)
-    return
-  end
-
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
-  vim.bo[buf].filetype = "git"
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].bufhidden = "wipe"
-
-  local width = math.floor(vim.o.columns * 0.9)
-  local height = math.floor(vim.o.lines * 0.85)
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    style = "minimal",
-    border = "rounded",
-    title = " " .. commit_hash:sub(1, 12) .. " ",
-    title_pos = "center",
-  })
-
-  -- q / <Esc> close the float without touching the blame layout behind it.
-  local close = function() pcall(vim.api.nvim_win_close, win, true) end
-  vim.keymap.set("n", "q",     close, { buffer = buf, nowait = true, silent = true })
-  vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true, silent = true })
+  require("config.git_float").show_commit(vim.fn.fnamemodify(file_path, ":h"), commit_hash)
 end
 
 -- Inside a blame view, `d` on any line opens codediff for the commit that

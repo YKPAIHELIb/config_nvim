@@ -1,8 +1,9 @@
 -- Extensions to codediff.nvim built on its internals, not its public API.
 --
--- Every module here reaches into codediff's own modules (lifecycle sessions,
--- the history panel object, its tree, view.update, keymap help) and some
--- replace functions on them. Any codediff update can break them: after
+-- The modules here reach into codediff's own modules (lifecycle sessions,
+-- the explorer and history panel objects, the history tree, view.update,
+-- keymap help) and some replace functions on them; new_tab.lua only runs
+-- :CodeDiff. Any codediff update can break them: after
 -- updating the plugin, check these features first. The tested codediff
 -- commit is pinned in lazy-lock.json.
 --
