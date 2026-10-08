@@ -107,6 +107,10 @@ keymap("n", "<C-q>", "<C-v>", opts)
 keymap("n", "<Leader>y", ":t.<CR>", described("Duplicate line"))
 keymap("v", "<Leader>y", ":t'><CR>", described("Duplicate selection"))
 
+-- Close a codediff or blame tab; does nothing in other tabs
+vim.keymap.set("n", "<Leader>q", function() require("config.tabs").close_tool_tab() end,
+  { silent = true, desc = "Close codediff/blame tab" })
+
 -- Delete trailing whitespace
 keymap("n", "<Leader>dw", [[:%s/\s\+$//<CR>:nohl<CR>]], described("Delete trailing whitespace"))
 keymap("v", "<Leader>dw", [[:s/\s\+$//<CR>:nohl<CR>]], described("Delete trailing whitespace"))

@@ -13,6 +13,7 @@ local M = {}
 
 function M.setup()
   require("ext.codediff.no_toggle").setup()
+  require("ext.codediff.close").setup()
   require("ext.codediff.shared_buffers").setup()
   require("ext.codediff.wheel_sync").setup()
   require("ext.codediff.history_compare").setup()

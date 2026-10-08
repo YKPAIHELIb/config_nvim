@@ -60,6 +60,23 @@ local function find_target(win)
   return best
 end
 
+-- Closes the current tab when it is a blame or codediff tab; elsewhere does
+-- nothing. A blame tab closes through its blame window: blame.nvim cleans
+-- up when that window's buffer is hidden, and plugins/blame.lua closes the
+-- tab once the window is gone.
+function M.close_tool_tab()
+  local tab = vim.api.nvim_get_current_tabpage()
+  local blame_win = vim.t[tab].blame_win
+  if vim.t[tab].blame_file and blame_win and vim.api.nvim_win_is_valid(blame_win) then
+    vim.api.nvim_win_close(blame_win, false)
+    return
+  end
+  local lifecycle = package.loaded["codediff.ui.lifecycle"]
+  if lifecycle and lifecycle.get_session(tab) then
+    require("ext.codediff.close").close(tab)
+  end
+end
+
 function M.is_redirected(win)
   win = win or vim.api.nvim_get_current_win()
   return find_target(win) ~= win

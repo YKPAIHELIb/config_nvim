@@ -47,6 +47,10 @@ return {
         history = {
           view_mode = "tree",
         },
+        -- Closing is handled in lua/ext/codediff/close.lua.
+        keymaps = {
+          view = { quit = false },
+        },
       })
     end
     apply()
