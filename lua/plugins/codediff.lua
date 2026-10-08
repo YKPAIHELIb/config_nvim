@@ -1,15 +1,16 @@
 -- VSCode-style side-by-side diff. Lazy-loaded on :CodeDiff so it stays free
 -- for `git difftool` and ad-hoc CLI compares (`nvim +"CodeDiff file a b"`).
 -- The plugin auto-downloads a prebuilt C binary; no compiler needed.
+
+local function file_history() require("ext.codediff.file_history").open() end
+
 return {
   "esmuellert/codediff.nvim",
   cmd = { "CodeDiff", "CodeDiffScratch", "CodeDiffToggleWS" },
-  -- An explicit HEAD range lifts the default 100-commit limit, so the whole
-  -- history is listed. In visual mode only commits touching the selected
-  -- lines are listed.
   keys = {
-    { "<leader>wh", "<cmd>CodeDiff history HEAD %<cr>", desc = "File history" },
-    { "<leader>wh", ":CodeDiff history HEAD<cr>", mode = "x", desc = "Line-range history" },
+    -- See lua/ext/codediff/file_history.lua.
+    { "<leader>wh", file_history, desc = "File history" },
+    { "<leader>wh", file_history, mode = "x", desc = "Line-range history" },
     -- What the current codediff tab compares, see lua/ext/codediff/tab_commits.lua.
     { "<leader>wi", function() require("ext.codediff.tab_commits").info() end, desc = "Diff tab: right commit details" },
     { "<leader>wl", function() require("ext.codediff.tab_commits").log() end, desc = "Diff tab: log left..right" },

@@ -7,8 +7,8 @@
 -- features first. The tested codediff
 -- commit is pinned in lazy-lock.json.
 --
--- Loaded from codediff's lazy.nvim `config`, so only once codediff itself is
--- loaded.
+-- setup() runs from codediff's lazy.nvim `config`, so only once codediff
+-- itself is loaded. file_for.lua is required directly and works without it.
 local M = {}
 
 function M.setup()
@@ -16,6 +16,7 @@ function M.setup()
   require("ext.codediff.shared_buffers").setup()
   require("ext.codediff.wheel_sync").setup()
   require("ext.codediff.history_compare").setup()
+  require("ext.codediff.file_history").setup()
 end
 
 return M
