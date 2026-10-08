@@ -102,9 +102,10 @@ keymap("i", "<M-BS>", '<C-w>', opts)
 -- <C-q> as an alias for visual-block (muscle memory from vsvim setup)
 keymap("n", "<C-q>", "<C-v>", opts)
 
--- Duplicate line / selection (`:t.` copies to right after current line)
+-- Duplicate line / selection: `:t.` copies to right after the current line,
+-- `:'<,'>t'>` copies the selected lines to right after the selection's last line
 keymap("n", "<Leader>y", ":t.<CR>", described("Duplicate line"))
-keymap("v", "<Leader>y", ":t.<CR>", described("Duplicate selection"))
+keymap("v", "<Leader>y", ":t'><CR>", described("Duplicate selection"))
 
 -- Delete trailing whitespace
 keymap("n", "<Leader>dw", [[:%s/\s\+$//<CR>:nohl<CR>]], described("Delete trailing whitespace"))
