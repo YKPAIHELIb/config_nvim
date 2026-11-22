@@ -3,8 +3,8 @@
 -- The plugin auto-downloads a prebuilt C library on first use; no compiler
 -- needed. Termux (Android/bionic) gets an Android NDK build from v2.68.0 on;
 -- older versions fetched the glibc Linux build, which Termux's Neovim cannot
--- load. The file watcher has no Android build, so Termux falls back to polling
--- (one "using polling fallback" warning).
+-- load. The file watcher has no Android build, so Termux uses polling; see
+-- the CODEDIFF_WATCHER_NO_AUTO_INSTALL line in config below.
 
 local function file_history() require("ext.codediff.file_history").open() end
 
@@ -21,6 +21,15 @@ return {
     { "<leader>wL", function() require("ext.codediff.tab_commits").history() end, desc = "Diff tab: history left..right" },
   },
   config = function()
+    -- codediff-watcher has no Android release. Without this, codediff tries
+    -- to download it for every repository it diffs and warns "Failed to
+    -- install codediff-watcher; using polling fallback" each time. Set
+    -- before any diff opens, so it goes straight to polling, silently.
+    local termux = vim.env.TERMUX_VERSION or (vim.env.PREFIX or ""):match("^/data/data/com%.termux")
+    if termux and not vim.env.CODEDIFF_WATCHER_NO_AUTO_INSTALL then
+      vim.env.CODEDIFF_WATCHER_NO_AUTO_INSTALL = "1"
+    end
+
     -- VSCode Dark+-ish diff colors. Defined as dedicated groups so they don't
     -- bleed into nvim's general DiffAdd/DiffDelete (used by :diffthis, gitsigns, etc.).
     -- The line_* groups paint whole changed lines; the char_* groups paint the
