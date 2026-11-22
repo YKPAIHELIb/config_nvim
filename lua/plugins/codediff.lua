@@ -1,11 +1,15 @@
 -- VSCode-style side-by-side diff. Lazy-loaded on :CodeDiff so it stays free
 -- for `git difftool` and ad-hoc CLI compares (`nvim +"CodeDiff file a b"`).
 -- The plugin auto-downloads a prebuilt C binary; no compiler needed.
+-- Not loaded on Termux (git + delta there): `cond` keeps it installed and
+-- pinned in lazy-lock.json, but its commands, keys and library download never
+-- happen. lua/ext/codediff and config.tabs only act when codediff is loaded.
 
 local function file_history() require("ext.codediff.file_history").open() end
 
 return {
   "esmuellert/codediff.nvim",
+  cond = not require("config.termux"),
   cmd = { "CodeDiff", "CodeDiffScratch", "CodeDiffToggleWS" },
   keys = {
     -- See lua/ext/codediff/file_history.lua.

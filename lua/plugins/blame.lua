@@ -12,7 +12,9 @@ end
 
 -- Inside a blame view, `d` on any line opens codediff for the commit that
 -- introduced it (parent..commit range explorer). Complements <CR> (git show
--- float) with a visual side-by-side view. Attached via autocmd because
+-- float) with a visual side-by-side view. On Termux, where codediff is not
+-- loaded (see plugins/codediff.lua), `d` shows the commit through delta in a
+-- terminal float instead. Attached via autocmd because
 -- blame.nvim's `mappings` config only exposes named built-in actions and
 -- doesn't emit an "on ready" event we could hook.
 local function attach_codediff_key(buf)
@@ -31,12 +33,18 @@ local function attach_codediff_key(buf)
       vim.notify("blame: no commit hash on this line", vim.log.levels.WARN)
       return
     end
+    if require("config.termux") then
+      local file = vim.t.blame_file
+      local dir = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
+      require("config.git_float").show_commit_term(dir, hash)
+      return
+    end
     vim.cmd(("CodeDiff %s^ %s"):format(hash, hash))
   end, {
     buffer = buf,
     nowait = true,
     silent = true,
-    desc = "CodeDiff for commit under cursor",
+    desc = require("config.termux") and "git show (delta) for commit under cursor" or "CodeDiff for commit under cursor",
   })
 end
 
