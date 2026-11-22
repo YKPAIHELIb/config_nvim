@@ -6,15 +6,20 @@
 -- last compare, and the keys are listed in codediff's g? help.
 --
 -- codediff internals used:
---   codediff.ui.lifecycle      get_session, get_explorer (the history panel
---                              object); set_tab_keymap is replaced
---   history panel object       tree, bufnr, winid, git_root, opts,
---                              is_single_file_mode; on_file_select and
---                              tree.render are replaced
+--   codediff.ui.lifecycle      get_session (panel.name, panel.view),
+--                              get_panel_view (the history panel object),
+--                              del_buf_keymap; set_tab_keymap is replaced
+--   history panel object       tree, bufnr, winid, is_single_file_mode,
+--                              data.git_root, data.opts (file_path,
+--                              line_range); on_file_select and tree.render
+--                              are replaced
 --   history tree nodes         get_node(line|id), get_id(), _line, data.*
 --                              and ids "commit:<hash>" / "file:<hash>:<path>"
---   codediff.ui.view           update(tabpage, session_config, jump)
---   codediff.config            options.keymaps.view, options.diff
+--   codediff.ui.view           update(tabpage, session_config, jump), with a
+--                              SessionConfig of Path refs (core.path
+--                              make_ref) and source_revisions
+--   codediff.keymap.resolve    keymaps_for("view") (keys as lists)
+--   codediff.config            options.diff.jump_to_first_change
 --   codediff.ui.keymap_help    toggle is replaced; session._help_win
 local M = {}
 
@@ -103,8 +108,8 @@ local function history_panel()
   local lifecycle = require("codediff.ui.lifecycle")
   local tab = vim.api.nvim_get_current_tabpage()
   local session = lifecycle.get_session(tab)
-  if not session or session.mode ~= "history" then return nil end
-  local history = lifecycle.get_explorer(tab)
+  if not session or not session.panel or session.panel.name ~= "history" then return nil end
+  local history = lifecycle.get_panel_view(tab)
   if not history then return nil end
   ensure_hooks(history)
   return history, tab
@@ -119,7 +124,7 @@ local function row_entry(history, line)
   if data.type == "file" then
     return { id = node:get_id(), hash = data.commit_hash, path = data.path }
   elseif data.type == "commit" then
-    local path = history.is_single_file_mode and (data.file_path or history.opts.file_path) or nil
+    local path = history.is_single_file_mode and (data.file_path or history.data.opts.file_path) or nil
     return { id = node:get_id(), hash = data.hash, path = path }
   end
 end
@@ -140,7 +145,8 @@ local function compare(history, tab, a, b, whole)
     return
   end
   local old, new = a, b
-  if is_ancestor(history.git_root, b.hash, a.hash) then old, new = b, a end
+  local git_root = history.data.git_root
+  if is_ancestor(git_root, b.hash, a.hash) then old, new = b, a end
 
   local path_old, path_new = old.path or new.path, new.path or old.path
   if not whole and not path_old then
@@ -157,14 +163,15 @@ local function compare(history, tab, a, b, whole)
     return
   end
 
+  local make_ref = require("codediff.core.path").make_ref
   require("codediff.ui.view").update(tab, {
-    mode = "history",
-    git_root = history.git_root,
-    original_path = path_old,
-    modified_path = path_new,
+    git_root = git_root,
+    original = make_ref(path_old, git_root),
+    modified = make_ref(path_new, git_root),
     original_revision = old.hash,
     modified_revision = new.hash,
-    line_range = history.opts.line_range,
+    source_revisions = { original = old.hash, modified = new.hash },
+    line_range = history.data.opts.line_range,
   }, require("codediff.config").options.diff.jump_to_first_change)
 end
 
@@ -218,17 +225,21 @@ end
 -- codediff puts its tab-wide keys on the history panel too, re-applying them
 -- on every diff update. Its do/dp there make `d` wait for a second key, and
 -- they have nothing to act on in the panel.
+-- The keys are released through codediff's keymap registry, which owns
+-- them, so it does not later restore or re-release a mapping it no longer
+-- has.
 local function drop_diff_keys_from_panel()
   local lifecycle = require("codediff.ui.lifecycle")
   local set_tab_keymap = lifecycle.set_tab_keymap
   lifecycle.set_tab_keymap = function(tabpage, mode, lhs, ...)
     local ok = set_tab_keymap(tabpage, mode, lhs, ...)
-    local view_keys = require("codediff.config").options.keymaps.view
+    if mode ~= "n" then return ok end
+    local view_keys = require("codediff.keymap.resolve").keymaps_for("view")
+    if not (vim.deep_equal(lhs, view_keys.diff_get) or vim.deep_equal(lhs, view_keys.diff_put)) then return ok end
     local session = lifecycle.get_session(tabpage)
-    if mode == "n" and (lhs == view_keys.diff_get or lhs == view_keys.diff_put)
-      and session and session.mode == "history"
-      and session.explorer and vim.api.nvim_buf_is_valid(session.explorer.bufnr) then
-      pcall(vim.keymap.del, "n", lhs, { buffer = session.explorer.bufnr })
+    local panel = session and session.panel
+    if panel and panel.name == "history" and panel.view and vim.api.nvim_buf_is_valid(panel.view.bufnr) then
+      lifecycle.del_buf_keymap(tabpage, panel.view.bufnr, "n", lhs)
     end
     return ok
   end
@@ -243,7 +254,7 @@ local function extend_help()
     toggle_help(tabpage)
     local session = require("codediff.ui.lifecycle").get_session(tabpage)
     local win = session and session._help_win
-    if not session or session.mode ~= "history" or not win or not vim.api.nvim_win_is_valid(win) then return end
+    if not session or not session.panel or session.panel.name ~= "history" or not win or not vim.api.nvim_win_is_valid(win) then return end
 
     local hbuf = vim.api.nvim_win_get_buf(win)
     local width = vim.api.nvim_win_get_width(win)

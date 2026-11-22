@@ -3,6 +3,9 @@
 -- codediff internals used: codediff.ui.lifecycle (get_session, get_windows)
 -- and its User CodeDiffOpen event payload (data.tabpage).
 --
+-- codediff 4 went back to native scrollbind and relies on a Neovim fix for
+-- tall virt_lines (neovim PR #41519); it has no wheel handling of its own.
+--
 -- Mouse-wheel bypasses vim's scrollbind sync because codediff aligns panes
 -- with virt_lines extmarks (visual-only) while scrollbind counts real
 -- buffer lines. Per-buffer <ScrollWheelUp/Down> maps do the scroll then
@@ -76,7 +79,9 @@ function M.setup()
 
   -- Explorer-driven buffer swaps: a fresh buffer entering a window of a
   -- codediff tab after the initial open would otherwise have no map.
-  vim.api.nvim_create_autocmd("BufWinEnter", {
+  -- BufEnter covers panes codediff fills without BufWinEnter (the empty side
+  -- of an added or deleted file), so the focused buffer always has the map.
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "BufEnter" }, {
     group = group,
     callback = function(args)
       local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")

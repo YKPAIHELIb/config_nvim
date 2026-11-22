@@ -13,10 +13,13 @@
 --   codediff.commands       vscode_diff (the :CodeDiff handler), called with
 --                           fargs/range so the path needs no escaping
 --   codediff.ui.lifecycle   get_session: original_win, original_revision,
---                           modified_revision, git_root
---   codediff.ui.history     create is replaced; the panel object's
---                           on_file_select, tree, winid, is_single_file_mode
---                           and the commit fields hash / file_path
+--                           modified_revision (nil for the working tree),
+--                           git_root
+--   codediff.ui.history     create(data, tabpage, width) is replaced; its
+--                           data { git_root, commits, opts.file_path }, the
+--                           panel object's on_file_select, tree, winid,
+--                           is_single_file_mode, the commit fields
+--                           hash / file_path and the "commit:<hash>" node ids
 local M = {}
 
 local file_for = require("ext.codediff.file_for")
@@ -73,8 +76,8 @@ end
 local function hook_create()
   local history_module = require("codediff.ui.history")
   local create = history_module.create
-  history_module.create = function(commits, git_root, tabpage, width, opts)
-    local history = create(commits, git_root, tabpage, width, opts)
+  history_module.create = function(data, tabpage, width)
+    local history = create(data, tabpage, width)
     -- The panel window is split off the window current when history opens
     -- and keeps its window options. Opened from a diff pane it would keep
     -- scrollbind and scroll along with the new diff, moving its cursor.
@@ -82,9 +85,10 @@ local function hook_create()
       vim.wo[history.winid].scrollbind = false
       vim.wo[history.winid].cursorbind = false
     end
+    local git_root, opts, commits = data.git_root, data.opts or {}, data.commits or {}
     local want = pending
     if not want or not history or not history.is_single_file_mode
-      or norm(git_root .. "/" .. opts.file_path) ~= want.path then
+      or not git_root or norm(git_root .. "/" .. opts.file_path) ~= want.path then
       return history
     end
     pending = nil

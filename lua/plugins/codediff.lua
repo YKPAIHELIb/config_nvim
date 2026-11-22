@@ -1,6 +1,10 @@
 -- VSCode-style side-by-side diff. Lazy-loaded on :CodeDiff so it stays free
 -- for `git difftool` and ad-hoc CLI compares (`nvim +"CodeDiff file a b"`).
--- The plugin auto-downloads a prebuilt C binary; no compiler needed.
+-- The plugin auto-downloads a prebuilt C library on first use; no compiler
+-- needed. Termux (Android/bionic) gets an Android NDK build from v2.68.0 on;
+-- older versions fetched the glibc Linux build, which Termux's Neovim cannot
+-- load. The file watcher has no Android build, so Termux falls back to polling
+-- (one "using polling fallback" warning).
 
 local function file_history() require("ext.codediff.file_history").open() end
 

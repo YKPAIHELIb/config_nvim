@@ -10,9 +10,12 @@
 -- or rebased.
 --
 -- codediff internals used:
---   codediff.ui.lifecycle   get_session: mode, git_root, original_revision,
---                           modified_revision, explorer
---   explorer object         base_revision, target_revision
+--   codediff.ui.lifecycle   get_session: panel.name ("explorer"/"history",
+--                           nil for a bare diff), git_root, original_revision,
+--                           modified_revision (nil for the working tree)
+--   explorer panel data     session.panel.data: source_revisions { original,
+--                           modified } (the refs as typed, "WORKING" for the
+--                           working tree), base_revision, target_revision
 local M = {}
 
 local git_float = require("config.git_float")
@@ -49,11 +52,13 @@ local function current_pair()
   if not root then return warn("this tab compares files, not git revisions") end
 
   local left, right
-  if session.mode == "explorer" then
-    local explorer = session.explorer or {}
-    left, right = explorer.base_revision or "HEAD", explorer.target_revision
+  local panel = session.panel and session.panel.name
+  if panel == "explorer" then
+    local data = session.panel.data or {}
+    local refs = data.source_revisions or {}
+    left, right = refs.original or data.base_revision or "HEAD", refs.modified or data.target_revision
   else
-    if session.mode == "history" and not session.modified_revision then
+    if panel == "history" and not session.modified_revision then
       return warn("select a commit in the history panel")
     end
     left, right = session.original_revision, session.modified_revision
